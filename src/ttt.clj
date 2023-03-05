@@ -35,7 +35,8 @@
 (def onoff
   (statechart {}
               (parallel {}
-                        (state {:id :toggle}
+                        (state {:id :toggle
+                                :initial :off}
                                (state {:id :on}
                                       (transition {:event  :turn-off
                                                    :target :off}))
