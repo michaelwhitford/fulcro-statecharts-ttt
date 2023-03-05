@@ -66,6 +66,7 @@
 (def t1 (sp/process-event! processor env t0 (new-event :turn-off)))
 (def t2 (sp/process-event! processor env t1 (new-event :turn-on)))
 (def t3 (sp/process-event! processor env t2 (new-event :turn-on)))
+(def t4 (sp/process-event! processor env t3 (new-event :turn-off)))
 
 (comment
   (show-states s0)
@@ -75,6 +76,8 @@
   (show-states t0)
   (show-states t1)
   (show-states t2)
+  (show-states t3)
+  (show-states t4)
   (pprint t2)
   (show-states t3)
   (pprint env)
