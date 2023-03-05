@@ -23,14 +23,25 @@
     (state {:id      id
             :initial initial}
            (state {:id o}
-                  (transition {:event  :swap-cell
+                  (transition {:event  :toggle-o
                                :target empty}))
            (state {:id x}
-                  (transition {:event  :swap-cell
+                  (transition {:event  :toggle-x
                                :target empty}))
            (state {:id empty}
                   (transition {:event  :reset
                                :target id})))))
+
+(def onoff
+  (statechart {}
+              (parallel {}
+                        (state {:id :toggle}
+                               (state {:id :on}
+                                      (transition {:event  :turn-off
+                                                   :target :off}))
+                               (state {:id :off}
+                                      (transition {:event  :turn-on
+                                                   :target :on}))))))
 
 (def ttt
   (statechart {}
@@ -42,18 +53,30 @@
 (def env (simple/simple-env))
 
 (simple/register! env ::ttt ttt)
+(simple/register! env ::toggle onoff)
 
 (def processor (::sc/processor env))
 
 (def s0 (sp/start! processor env ::ttt {::sc/session-id 1}))
-(def s1 (sp/process-event! processor env s0 (new-event :o)))
-(def s2 (sp/process-event! processor env s1 (new-event :x)))
+(def s1 (sp/process-event! processor env s0 (new-event :toggle-o)))
+(def s2 (sp/process-event! processor env s1 (new-event :toggle-x)))
 (def s3 (sp/process-event! processor env s2 (new-event :empty)))
+
+(def t0 (sp/start! processor env ::toggle {::sc/session-id 2}))
+(def t1 (sp/process-event! processor env t0 (new-event :turn-off)))
+(def t2 (sp/process-event! processor env t1 (new-event :turn-on)))
+(def t3 (sp/process-event! processor env t2 (new-event :turn-on)))
 
 (comment
   (show-states s0)
   (show-states s1)
   (show-states s2)
   (show-states s3)
+  (show-states t0)
+  (show-states t1)
+  (show-states t2)
+  (pprint t2)
+  (show-states t3)
   (pprint env)
-  (pprint s0))
+  (pprint s0)
+  (pprint s1))
