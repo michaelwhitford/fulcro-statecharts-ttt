@@ -23,14 +23,14 @@
     (state {:id      id
             :initial initial}
            (state {:id o}
-                  (transition {:event  :toggle-o
-                               :target empty}))
-           (state {:id x}
                   (transition {:event  :toggle-x
+                               :target x}))
+           (state {:id x}
+                  (transition {:event  :toggle-empty
                                :target empty}))
            (state {:id empty}
-                  (transition {:event  :reset
-                               :target id})))))
+                  (transition {:event :toggle-o
+                               :target o})))))
 
 (def tic-tac-toe
   (statechart {}
@@ -48,6 +48,7 @@
                                (state {:id :off}
                                       (transition {:event  :turn-on
                                                    :target :on}))))))
+
 (defn show-states [wmem] (println (sort (::sc/configuration wmem))))
 
 (def env (simple/simple-env))
@@ -60,7 +61,9 @@
 (def t0 (sp/start! processor env ::ttt {::sc/session-id 1}))
 (def t1 (sp/process-event! processor env t0 (new-event :toggle-o)))
 (def t2 (sp/process-event! processor env t1 (new-event :toggle-x)))
-(def t3 (sp/process-event! processor env t2 (new-event :empty)))
+(def t3 (sp/process-event! processor env t2 (new-event :toggle-empty)))
+(def t4 (sp/process-event! processor env t3 (new-event :toggle-o)))
+(def t5 (sp/process-event! processor env t4 (new-event :toggle-empty)))
 
 (def s0 (sp/start! processor env ::toggle {::sc/session-id 2}))
 (def s1 (sp/process-event! processor env s0 (new-event :turn-off)))
@@ -77,8 +80,9 @@
   (show-states t0)
   (show-states t1)
   (show-states t2)
-  (pprint t2)
   (show-states t3)
+  (show-states t4)
+  (show-states t5)
   (pprint env)
   (pprint s0)
   (pprint s1))
