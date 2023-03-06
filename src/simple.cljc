@@ -1,4 +1,4 @@
-(ns ttt
+(ns simple
   (:require
    [com.fulcrologic.statecharts :as sc]
    [com.fulcrologic.statecharts.elements :refer [state transition log parallel on-entry on-exit]]
