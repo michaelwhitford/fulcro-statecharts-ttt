@@ -1,7 +1,7 @@
 (ns ttt
   (:require
    [com.fulcrologic.statecharts :as sc]
-   [com.fulcrologic.statecharts.elements :refer [state transition log parallel on-entry on-exit data-model script-fn]]
+   [com.fulcrologic.statecharts.elements :refer [state transition assign log parallel on-entry on-exit data-model script-fn]]
    [com.fulcrologic.statecharts.events :refer [new-event]]
    [com.fulcrologic.statecharts.protocols :as sp]
    [com.fulcrologic.statecharts.simple :as simple]
@@ -17,11 +17,7 @@
 (add-tap #'p/submit)
 (def nk extend-key)
 
-(def empty-board [[nil nil nil]
-                  [nil nil nil]
-                  [nil nil nil]])
-
-(def flat-empty-board (vec (flatten empty-board)))
+(def empty-board [nil nil nil nil nil nil nil nil nil])
 
 (defn tile [id initial idx]
   "create tiles with namespaced ids and events"
@@ -35,26 +31,22 @@
             :initial initial}
            (state {:id o}
                   (on-entry {}
-                            (script-fn [env data] (tap> {:env env :data data}))
-                            (log {:label (str "entering " o)}))
+                            (assign {:location [:board idx] :expr :o})
+                            (log {:label (str "entering " o) :expr (fn [env data] (tap> data))}))
                   (on toggle-o empty)
-                  (on toggle-x x)
-                  (on-exit {}
-                           (log {:label (str "exiting " o)})))
+                  (on toggle-x x))
            (state {:id x}
                   (on-entry {}
-                            (log {:label (str "entering " x)}))
+                            (assign {:location [:board idx] :expr :x})
+                            (log {:label (str "entering " x) :expr (fn [env data] (tap> data))}))
                   (on toggle-x empty)
-                  (on toggle-o o)
-                  (on-exit {}
-                           (log {:label (str "exiting " x)})))
+                  (on toggle-o o))
            (state {:id empty}
                   (on-entry {}
-                            (log {:label (str "entering " empty)}))
+                            (assign {:location [:board idx] :expr :empty})
+                            (log {:label (str "entering " empty) :expr (fn [env data] (tap> data))}))
                   (on toggle-o o)
-                  (on toggle-x x)
-                  (on-exit {}
-                           (log {:label (str "exiting " empty)}))))))
+                  (on toggle-x x)))))
 
 (defn player [id initial]
   (let [idle (nk id "idle")
@@ -86,13 +78,15 @@
 
 (def tic-tac-toe
   (statechart {}
-              (data-model {:board flat-empty-board})
               (parallel {}
                         (state {:id :players}
                                (parallel {}
-                                         (player :player1 :idle)
-                                         (player :player2 :idle)))
+                                         (player :player-x :idle)
+                                         (player :player-o :idle)))
                         (state {:id :board}
+                               (on-entry {}
+                                         (assign {:location [:board] :expr empty-board})
+                                         (assign {:location [:history] :expr []}))
                                (parallel {}
                                          (for [t (range 9)]
                                            (tile (keyword (str "tile" t)) :empty t))))
@@ -109,13 +103,15 @@
 
 (def processor (::sc/processor env))
 
-(def t0 (sp/start! processor env ::ttt {::sc/session-id 1}))
-(def t1 (sp/process-event! processor env t0 (new-event :tile0/toggle-o)))
-(def t2 (sp/process-event! processor env t1 (new-event :tile0/toggle-x)))
-(def t3 (sp/process-event! processor env t2 (new-event :tile1/toggle-o)))
-(def t4 (sp/process-event! processor env t3 (new-event :tile1/toggle-empty)))
+(comment
+  (do
+    (def t0 (sp/start! processor env ::ttt {::sc/session-id 1}))
+    (def t1 (sp/process-event! processor env t0 (new-event :tile0/toggle-o)))
+    (def t2 (sp/process-event! processor env t1 (new-event :tile0/toggle-x)))
+    (def t3 (sp/process-event! processor env t2 (new-event :tile1/toggle-o)))
+    (def t4 (sp/process-event! processor env t3 (new-event :tile1/toggle-empty)))
+    (log/set-min-level! :debug)))
 
-(log/set-min-level! :debug)
 (comment
   (show-states t0)
   (pprint t0)
@@ -127,6 +123,4 @@
   (pprint t3)
   (show-states t4)
   (pprint t4)
-  (pprint env)
-  (pprint s0)
   (pprint s1))
